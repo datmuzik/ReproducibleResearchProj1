@@ -1,0 +1,75 @@
+---
+title: "CourseProject1"
+author: "Daniel Traverso"
+date: "11/1/2017"
+output: html_document
+---
+
+## Loading and preprocessing the data
+
+Read data from current working directory
+``` {r read}
+data <- read.csv("activity.csv")
+data$date<- as.Date(data$date)
+```
+
+## What is mean total number of steps taken per day?
+
+``` {r total per day}
+data2 <- data[complete.cases(data),]
+daily <- with(data2, tapply(steps, date, sum))
+hist(daily, breaks=10, main="Total Daily Steps", xlab="Daily Steps")
+mean(daily)
+median(daily)
+```
+
+## What is the average daily activity pattern?
+
+Times Series
+``` {r time}
+interval <- with(data2, tapply(steps, interval, mean))
+plot(interval, type="l", xlab="Interval",ylab="Average Daily Steps")
+```
+
+Which interval contains maximum number of steps?
+``` {r max interval}
+interval[which.max(interval)]
+```
+
+## Imputing missing values
+
+Number of missing values in original dataset:
+``` {r missing}
+sum(is.na(data$steps))
+```
+
+Impute missing values using means of each interval:
+``` {r impute}
+data3<- data
+bad<- is.na(data3$steps)
+avg_interval<- tapply(data3$steps, data3$interval, mean, na.rm=TRUE, simplify=TRUE)
+data3$steps[bad] <- avg_interval[as.character(data3$interval[bad])]
+data3<- data3[, c("date", "interval", "steps")]
+daily2 <- with(data3, tapply(steps, date, sum))
+hist(daily2, breaks=10, main="Total Daily Steps", xlab="Daily Steps")
+mean(daily2)
+median(daily2)
+```
+The mean remains the same, but now the median equals the mean.
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+``` {r weekdays}
+data3$type <- ifelse(weekdays(data3$date)=="Saturday"|weekdays(data3$date)=="Sunday","weekend","weekday")
+data3$type <- as.factor(data3$type)
+library(dplyr)
+library(ggplot2)
+interval2<- data3%>%group_by(interval,type)%>%summarise(avgStep = mean(steps))
+plot<- ggplot(interval2, aes(x =interval,y=avgStep,color=type))+geom_line()+
+labs(title = "Average Daily Steps by Weektype", x = "Interval", y = "Number of Steps")+facet_wrap(~type, ncol = 1, nrow=2)
+print(plot)
+```
+
+
+The data shows more activity on the weekend.
+
